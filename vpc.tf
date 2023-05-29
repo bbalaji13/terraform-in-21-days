@@ -1,3 +1,9 @@
+locals {
+  public_cidr = ["10.0.0.0/24","10.0.1.0/24"]
+  private_cidr =[ "10.0.101.0/24","10.0.102.0/24"]
+  availability_zones = ["us-west-2a","us-west-2b"]
+}
+
 resource "aws_vpc" "main" {
   cidr_block       = "10.0.0.0/16"
 
@@ -6,45 +12,30 @@ resource "aws_vpc" "main" {
   }
 }
 
-resource "aws_subnet" "public1" {
+resource "aws_subnet" "public" {
+  count = length(local.public_cidr)
+
   vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.0.0/24"
-  availability_zone = "us-west-2a"
+  cidr_block =  local.public_cidr[count.index]
+  availability_zone = local.availability_zones[count.index]
 
   tags = {
-    Name = "public1"
+    Name = "public${count.index}"
   }
 }
 
-resource "aws_subnet" "public2" {
+resource "aws_subnet" "private" {
+  count = length(local.private_cidr)
+
   vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.1.0/24"
-  availability_zone = "us-west-2b"
+  cidr_block = local.private_cidr[count.index]
+  availability_zone = local.availability_zones[count.index]
 
   tags = {
-    Name = "public2"
+    Name = "private${count.index}"
   }
 }
 
-resource "aws_subnet" "private1" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.2.0/24"
-  availability_zone = "us-west-2a"
-
-  tags = {
-    Name = "private1"
-  }
-}
-
-resource "aws_subnet" "private2" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = "10.0.3.0/24"
-  availability_zone = "us-west-2b"
-
-  tags = {
-    Name = "private2"
-  }
-}
 
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
@@ -67,88 +58,42 @@ resource "aws_route_table" "public" {
   }
 }
 
-resource "aws_route_table_association" "public1" {
-  subnet_id      = aws_subnet.public1.id
+resource "aws_route_table_association" "public" {
+  count = length(local.public_cidr)
+  subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
 }
 
-resource "aws_route_table_association" "public2" {
-  subnet_id      = aws_subnet.public2.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_eip" "nat1" {
+resource "aws_eip" "nat" {
+  count = length((local.private_cidr))
   vpc      = true
 }
 
-resource "aws_eip" "nat2" {
-  vpc      = true
-}
-
-
-
-resource "aws_nat_gateway" "nat1" {
-  allocation_id = aws_eip.nat1.id
-  subnet_id     = aws_subnet.public1.id
+resource "aws_nat_gateway" "nat" {
+  count = length(local.public_cidr)
+  allocation_id = aws_eip.nat[count.index].id
+  subnet_id     = aws_subnet.public[count.index].id
 
   tags = {
-    Name = "Nat gateway 1"
+    Name = "Nat${count.index}"
   }
 
-  # To ensure proper ordering, it is recommended to add an explicit dependency
-  # on the Internet Gateway for the VPC.
-  depends_on = [aws_internet_gateway.main]
-}
-
-resource "aws_nat_gateway" "nat2" {
-  allocation_id = aws_eip.nat2.id
-  subnet_id     = aws_subnet.public2.id
-
-  tags = {
-    Name = "Nat gateway 2"
-  }
-
-  # To ensure proper ordering, it is recommended to add an explicit dependency
-  # on the Internet Gateway for the VPC.
-  depends_on = [aws_internet_gateway.main]
 }
 
 
-resource "aws_route_table" "private1" {
+resource "aws_route_table" "private" {
+  count = length(local.private_cidr)
   vpc_id = aws_vpc.main.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat1.id
+    nat_gateway_id = aws_nat_gateway.nat[count.index].id
   }
 }
 
 
-
-resource "aws_route_table" "private2" {
-  vpc_id = aws_vpc.main.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.nat2.id
-  }
+resource "aws_route_table_association" "private" {
+  count = 2
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
 }
-
-resource "aws_route_table_association" "private1" {
-  subnet_id      = aws_subnet.private1.id
-  route_table_id = aws_route_table.private1.id
-}
-
-resource "aws_route_table_association" "private2" {
-  subnet_id      = aws_subnet.private2.id
-  route_table_id = aws_route_table.private2.id
-}
-
-
-
-
-
-
-
-
-
