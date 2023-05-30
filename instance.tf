@@ -21,6 +21,7 @@ resource "aws_instance" "web-public" {
   key_name                    = "balaji-tynybay"
   vpc_security_group_ids      = [aws_security_group.web-public.id]
   subnet_id                   = aws_subnet.public[0].id
+  user_data                   = file("userdata.sh")
 
   tags = {
     Name = "${var.env_code}-public"
@@ -36,6 +37,14 @@ resource "aws_security_group" "web-public" {
     description = "ssh from VPC"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "ssh from httpd"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
