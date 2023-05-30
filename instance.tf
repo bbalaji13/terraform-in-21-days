@@ -1,21 +1,5 @@
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-
 resource "aws_instance" "web-public" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-0c65adc9a5c1b5d7c"
   associate_public_ip_address = true
   instance_type               = "t2.micro"
   key_name                    = "balaji-tynybay"
@@ -56,7 +40,7 @@ resource "aws_security_group" "web-public" {
 
 
 resource "aws_instance" "web-private" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = "ami-0c65adc9a5c1b5d7c"
   associate_public_ip_address = false
   instance_type               = "t2.micro"
   key_name                    = "balaji-tynybay"
