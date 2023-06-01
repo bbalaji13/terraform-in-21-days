@@ -15,22 +15,6 @@ data "aws_ami" "ubuntu" {
 }
 
 
-
-resource "aws_instance" "web-private" {
-  count = 2
-
-  ami                         = data.aws_ami.ubuntu.id
-  instance_type               = "t2.micro"
-  key_name                    = "balaji-tynybay"
-  vpc_security_group_ids      = [aws_security_group.web-private.id]
-  subnet_id                   = data.terraform_remote_state.level1.outputs.private_subnet_id[count.index]
-  user_data                   = file("userdata.sh")
-
-  tags = {
-    Name = "${var.env_code}-private"
-  }
-}
-
 resource "aws_security_group" "web-private" {
   name        = "${var.env_code}-web-private"
   description = "Allow TLS inbound traffic"
@@ -62,5 +46,32 @@ resource "aws_security_group" "web-private" {
 
   tags = {
     Name = "allow_ssh"
+  }
+}
+
+
+resource "aws_launch_configuration" "test" {
+  name            = "${var.env_code}-launch-config"
+  image_id        = data.aws_ami.ubuntu.id
+  instance_type   = "t2.micro"
+  security_groups = [aws_security_group.web-private.id]
+  user_data       = file("userdata.sh")
+  key_name        = "balaji-tynybay"
+}
+
+resource "aws_autoscaling_group" "test" {
+  name             = var.env_code
+  desired_capacity = 2
+  max_size         = 4
+  min_size         = 2
+
+  target_group_arns    = [aws_lb_target_group.test.arn]
+  launch_configuration = aws_launch_configuration.test.name
+  vpc_zone_identifier  = data.terraform_remote_state.level1.outputs.private_subnet_id
+
+  tag {
+    key                 = "Name"
+    value               = var.env_code
+    propagate_at_launch = true
   }
 }
