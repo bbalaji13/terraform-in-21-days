@@ -1,3 +1,3 @@
 variable "env_code" {
-    default = "mumbai"
+  default = "mumbai"
 }
