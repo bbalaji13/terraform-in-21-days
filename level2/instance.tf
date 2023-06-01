@@ -20,7 +20,7 @@ resource "aws_instance" "web-public" {
   instance_type               = "t2.micro"
   key_name                    = "balaji-tynybay"
   vpc_security_group_ids      = [aws_security_group.web-public.id]
-  subnet_id                   = aws_subnet.public[0].id
+  subnet_id                   = data.terraform_remote_state.level1.outputs.public_subnet_id[0]
   user_data                   = file("userdata.sh")
 
   tags = {
@@ -31,7 +31,7 @@ resource "aws_instance" "web-public" {
 resource "aws_security_group" "web-public" {
   name        = "${var.env_code}-web-public"
   description = "Allow TLS inbound traffic"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.terraform_remote_state.level1.outputs.vpc_id
 
   ingress {
     description = "ssh from VPC"
@@ -70,7 +70,7 @@ resource "aws_instance" "web-private" {
   instance_type               = "t2.micro"
   key_name                    = "balaji-tynybay"
   vpc_security_group_ids      = [aws_security_group.web-private.id]
-  subnet_id                   = aws_subnet.private[0].id
+  subnet_id                   = data.terraform_remote_state.level1.outputs.private_subnet_id[0]
 
   tags = {
     Name = "${var.env_code}-private"
@@ -80,14 +80,14 @@ resource "aws_instance" "web-private" {
 resource "aws_security_group" "web-private" {
   name        = "${var.env_code}-web-private"
   description = "Allow TLS inbound traffic"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = data.terraform_remote_state.level1.outputs.vpc_id
 
   ingress {
     description = "ssh from VPC"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
+    cidr_blocks = [data.terraform_remote_state.level1.outputs.vpc_cidr]
   }
 
   egress {
