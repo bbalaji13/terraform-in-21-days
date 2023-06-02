@@ -28,14 +28,6 @@ resource "aws_security_group" "web-private" {
     security_groups = [aws_security_group.load_balancer.id]
   }
 
-  ingress {
-    description = "ssh from VPC"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [data.terraform_remote_state.level1.outputs.vpc_cidr]
-  }
-
   egress {
     from_port        = 0
     to_port          = 0
@@ -51,12 +43,12 @@ resource "aws_security_group" "web-private" {
 
 
 resource "aws_launch_configuration" "test" {
-  name            = "${var.env_code}-launch-config"
-  image_id        = data.aws_ami.ubuntu.id
-  instance_type   = "t2.micro"
-  security_groups = [aws_security_group.web-private.id]
-  user_data       = file("userdata.sh")
-  key_name        = "balaji-tynybay"
+  name                 = "${var.env_code}-launch-config"
+  image_id             = data.aws_ami.ubuntu.id
+  instance_type        = "t2.micro"
+  security_groups      = [aws_security_group.web-private.id]
+  user_data            = file("userdata.sh")
+  iam_instance_profile = aws_iam_instance_profile.test_profile.name
 }
 
 resource "aws_autoscaling_group" "test" {
