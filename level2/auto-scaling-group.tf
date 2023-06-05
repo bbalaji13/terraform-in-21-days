@@ -25,5 +25,3 @@ module "asg" {
   lb_security_group_id = module.lb.lb_security_group_id
   vpc_id = data.terraform_remote_state.level1.outputs.vpc_id
 }
-
-
