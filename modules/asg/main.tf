@@ -10,7 +10,7 @@ resource "aws_security_group" "web-private" {
     protocol        = "tcp"
     security_groups = [var.lb_security_group_id]
   }
-
+  
   egress {
     from_port        = 0
     to_port          = 0
