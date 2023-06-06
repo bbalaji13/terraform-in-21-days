@@ -66,3 +66,15 @@ resource "aws_lb_listener" "test" {
     target_group_arn = aws_lb_target_group.test.arn
   }
 }
+
+data "aws_route53_zone" "main" {
+  name = "chatgptconsulting.com"
+}
+
+resource "aws_route53_record" "www" {
+  zone_id = data.aws_route53_zone.main.id
+  name    = "www.${data.aws_route53_zone.main.name}"
+  type    = "CNAME"
+  ttl     = "300"
+  records = [aws_lb.load_balancer.dns_name]
+}
