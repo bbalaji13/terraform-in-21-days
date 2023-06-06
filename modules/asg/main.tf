@@ -1,31 +1,14 @@
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-
-
 resource "aws_security_group" "web-private" {
   name        = "${var.env_code}-web-private"
   description = "Allow TLS inbound traffic"
-  vpc_id      = data.terraform_remote_state.level1.outputs.vpc_id
+  vpc_id      = var.vpc_id
 
   ingress {
     description     = "ssh from loadbalancer"
     from_port       = 80
     to_port         = 80
     protocol        = "tcp"
-    security_groups = [aws_security_group.load_balancer.id]
+    security_groups = [var.lb_security_group_id]
   }
 
   egress {
@@ -44,10 +27,10 @@ resource "aws_security_group" "web-private" {
 
 resource "aws_launch_configuration" "test" {
   name                 = "${var.env_code}-launch-config"
-  image_id             = data.aws_ami.ubuntu.id
+  image_id             = var.ami_id
   instance_type        = "t2.micro"
   security_groups      = [aws_security_group.web-private.id]
-  user_data            = file("userdata.sh")
+  user_data            = file("${path.module}/userdata.sh")
   iam_instance_profile = aws_iam_instance_profile.test_profile.name
 }
 
@@ -57,9 +40,9 @@ resource "aws_autoscaling_group" "test" {
   max_size         = 4
   min_size         = 2
 
-  target_group_arns    = [aws_lb_target_group.test.arn]
+  target_group_arns    = [var.target_group_arn]
   launch_configuration = aws_launch_configuration.test.name
-  vpc_zone_identifier  = data.terraform_remote_state.level1.outputs.private_subnet_id
+  vpc_zone_identifier  = var.private_subnet_id
 
   tag {
     key                 = "Name"
