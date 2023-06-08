@@ -1,3 +1,1 @@
-variable "env_code" {
-  default = "mumbai"
-}
+variable "cluster_name" {}
